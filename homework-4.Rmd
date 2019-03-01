@@ -1,6 +1,6 @@
 ---
 title: 'Homework 4: Bags, Forests, Boosts, oh my'
-author: "Your Name Goes Here"
+author: "Yi Liu"
 date: "2/28/2019"
 output: github_document
 ---
@@ -9,12 +9,52 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 ## Problem 1
 
 Problem 7 from Chapter 8 in the text. To be specific, please use a sequence of
 `ntree` from 25 to 500 in steps of 25 and `mtry` from 3 to 9 for by 1. 
 
 ## Answer 1
+```{r knitr-options, include = FALSE}
+knitr::opts_chunk$set(fig.align="center",
+                      warning = FALSE,
+                      message = FALSE,
+                      comment = NA)
+```
+
+```{r libs, message = F, warning = F, include = F}
+library(tidyverse)
+library(broom)
+library(glmnet)
+library(caret)
+library(ISLR)
+library(janitor)
+library(stringr)
+library(rpart)
+library(rpart.plot)
+library(partykit)
+library(randomForest)
+library(MASS)
+library(gbm)
+theme_set(theme_bw())
+```
+
+```{r}
+set.seed(1)
+train <- sample(1:nrow(Boston), nrow(Boston) / 2)
+Boston.train <- Boston[train, -14]
+Boston.test <- Boston[-train, -14]
+Y.train <- Boston[train, 14]
+Y.test <- Boston[-train, 14]
+rf.boston1 <- randomForest(Boston.train, y = Y.train, xtest = Boston.test, ytest = Y.test, mtry = ncol(Boston) - 1, ntree = 500)
+rf.boston2 <- randomForest(Boston.train, y = Y.train, xtest = Boston.test, ytest = Y.test, mtry = (ncol(Boston) - 1) / 2, ntree = 500)
+rf.boston3 <- randomForest(Boston.train, y = Y.train, xtest = Boston.test, ytest = Y.test, mtry = sqrt(ncol(Boston) - 1), ntree = 500)
+plot(1:500, rf.boston1$test$mse, col = "green", type = "l", xlab = "Number of Trees", ylab = "Test MSE", ylim = c(10, 19))
+lines(1:500, rf.boston2$test$mse, col = "red", type = "l")
+lines(1:500, rf.boston3$test$mse, col = "blue", type = "l")
+legend("topright", c("m = p", "m = p/2", "m = sqrt(p)"), col = c("green", "red", "blue"), cex = 1, lty = 1)
+```
 
 ## Problem 2
 
@@ -22,8 +62,113 @@ Problem 8 from Chapter 8 in the text. Set your seed with 9823 and split into
 train/test using 50\% of your data in each split. In addition to 
 parts (a) - (e), do the following:
 
+(a) Split the data set into a training set and a test set.
+
+```{r}
+set.seed(9823)
+df <- Carseats 
+inTraining <- createDataPartition(df$Sales, p = .5, list = F)
+Carseats.train <- df[inTraining, ]
+Carseats.test  <- df[-inTraining, ]
+```
+(b) Fit a regression tree to the training set. Plot the tree, and interpret
+the results. What test MSE do you obtain?
+```{r}
+library(tree)
+tree.carseats <- tree(Sales ~ ., data = Carseats.train)
+summary(tree.carseats)
+```
+```{r}
+plot(tree.carseats)
+text(tree.carseats, pretty = 0)
+```
+For the Carseats data, a regression tree for predicting the sales, based on the value of ShelveLoc, Price, Income, CompPrice, Education, Age, and Advertising.At a given internal node, the label (of the form Xj < tk) indicates the left-hand branch emanating from that split, and the right-hand branch corresponds to Xj ≥ tk.For instance, the split in the middle of the tree results in two branches. The left-hand branch corresponds to Price<105.5, and the right-hand branch corresponds to Price>=105.5. The tree has 19 terminal nodes, or leaves. The number in each leaf is the mean of the response for the observations that fall there. 
+
+```{r}
+yhat <- predict(tree.carseats, newdata = Carseats.test)
+mean((yhat - Carseats.test$Sales)^2)
+```
+We may conclude that the Test MSE is about 5.29.
+(c) Use cross-validation in order to determine the optimal level of
+tree complexity. Does pruning the tree improve the test MSE?
+```{r}
+cv.carseats <- cv.tree(tree.carseats)
+plot(cv.carseats$size, cv.carseats$dev, type = "b")
+tree.min <- which.min(cv.carseats$dev)
+points(tree.min, cv.carseats$dev[tree.min], col = "red", cex = 2, pch = 20)
+```
+In this case, the tree of size 14 is selected by cross-validation. We now prune the tree to obtain the 14-node tree.
+```{r}
+prune.carseats <- prune.tree(tree.carseats, best = 14)
+plot(prune.carseats)
+text(prune.carseats, pretty = 0)
+```
+```{r}
+yhat <- predict(prune.carseats, newdata = Carseats.test)
+mean((yhat - Carseats.test$Sales)^2)
+```
+We may see that pruning the tree decreases the Test MSE to 4.95.
+
+(d) Use the bagging approach in order to analyze this data. What
+test MSE do you obtain? Use the importance() function to determine
+which variables are most important.
+```{r}
+bag.carseats <- randomForest(Sales ~ ., data = Carseats.train, mtry = 10, ntree = 500, importance = TRUE)
+yhat.bag <- predict(bag.carseats, newdata = Carseats.test)
+mean((yhat.bag - Carseats.test$Sales)^2)
+```
+We may see that bagging decreases the Test MSE to 3.04.
+```{r}
+importance(bag.carseats)
+```
+We may conclude that “Price” and “ShelveLoc” are the two most important variables.
+
+(e) Use random forests to analyze this data. What test MSE do you
+obtain? Use the importance() function to determine which variables
+aremost important. Describe the effect of m, the number of
+variables considered at each split, on the error rate
+obtained.
+```{r}
+rf.carseats <- randomForest(Sales ~ ., data = Carseats.train, mtry = 3, ntree = 500, importance = TRUE)
+yhat.rf <- predict(rf.carseats, newdata = Carseats.test)
+mean((yhat.rf - Carseats.test$Sales)^2)
+```
+In this case, we have a Test MSE of 3.53.
+```{r}
+importance(rf.carseats)
+```
+We may conclude that, in this case also, “Price” and “ShelveLoc” are the two most important variables.
+
 1. Fit a gradient-boosted tree to the training data and report the estimated 
 test MSE. 
+
+```{r}
+set.seed(9823)
+grid <- expand.grid(interaction.depth = c(1, 3), 
+                    n.trees = seq(0, 2000, by = 100),
+                    shrinkage = c(.01, 0.001),
+                    n.minobsinnode = 10)
+trainControl <- trainControl(method = "cv", number = 5)
+gbm_carseats <- train(Sales ~ ., 
+                    data = Carseats.train, 
+                    distribution = "gaussian", 
+                    method = "gbm",
+                    trControl = trainControl, 
+                    tuneGrid = grid,
+                    verbose = FALSE)
+gbm_carseats
+```
+
 2. Fit a multiple regression model to the training data and report the 
 estimated test MSE
+```{r}
+lm_carseats <- lm(Sales ~ ., data = Carseats.train)
+err.lm<-mean((Carseats.test$Sales - predict(lm_carseats, newdata = Carseats.test))^2)
+err.lm
+```
+
 3. Summarize your results. 
+```{r}
+summary(lm_carseats)
+```
+
