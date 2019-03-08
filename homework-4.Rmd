@@ -36,49 +36,47 @@ Problem 7 from Chapter 8 in the text. To be specific, please use a sequence of
 ## Answer 1
 
 ```{r}
-#without cross validation
-set.seed(1)
+set.seed(1234)
 df <- tbl_df(Boston)
-inTraining <- createDataPartition(df$medv, p = .75, list = F)
-training <- df[inTraining, ]
-testing  <- df[-inTraining, ]
-results <- tibble(trees = rep(seq(25,500,by=25), each=7),
-                  mtry = rep(3:9, each=1,times=20),
-                  MSE = rep(NA, length(trees)))
-for (i in seq(25, 500,by=25)){
-  for (j in seq(3, 9, by=1)){
-    rf_results <- randomForest(medv ~ ., data = training, ntree = i, mtry=j)
-    test_pred <- predict(rf_results, newdata = testing)
-    error <- (mean((test_pred - testing$medv)^2))
-    results[which(results$trees==i & results$mtry==j),'MSE'] = error
+
+for (k in 1:20){
+  inTraining <- createDataPartition(df$medv, p = .75, list = F)
+  training <- df[inTraining, ]
+  testing <- df[-inTraining, ]
+  mtry <- c(3:9)
+  ntree <- seq(25, 500, len = 20)
+  results <- tibble(trial = rep(NA, 140),
+  mtry = rep(NA, 140),
+  ntree = rep(NA, 140),
+  mse = rep(NA, 140)) 
+  for(i in 1:7){
+    cat(sprintf('Trial: %s, mtry: %s --- %s\n', k, mtry[i], Sys.time()))
+    for(j in 1:20){ 
+      rf_train <- randomForest(medv ~ .,
+                               data = training,
+                               mtry = mtry[i],
+                               ntree = ntree[j])
+      mse <- mean((predict(rf_train, newdata = testing) - testing$medv)^2)
+      results[(i-1)*20 + j, ] <- c(k, mtry[i], ntree[j], mse)
+    }
   }
+  if(exists("results_total")){
+  results_total <- bind_rows(results_total, results)
+  }
+  else(
+  results_total <- results
+  )
 }
-p <- ggplot(data = results, aes(x = trees, y = MSE, group=mtry, col=as.factor(mtry)))
-p + geom_line() + labs(color = 'mtry')
 ```
 
 ```{r}
-set.seed(1)
-results <- tibble(trees = rep(seq(25,500,by=25), each=7),
-                  mtry = rep(3:9, each=1,times=20),
-                  MSE = rep(NA, length(trees)))
-set.seed(1)
-for (i in seq(25, 500, by=25)){
-  rf_results <- train(medv ~ ., 
-                      data = training,
-                      method = "rf",
-                      ntree = i,
-                      importance = T,
-                      tuneGrid = data.frame(mtry = seq(3,9,by=1)))
-  for (k in seq(1,7)){
-    results[which(results$trees==i & results$mtry==k+2),'MSE'] = (rf_results$results$RMSE[k])^2
-    }
-}
-p <- ggplot(data = results, aes(x = trees, y = MSE, group=mtry, col=as.factor(mtry)))
-p + geom_line() + labs(color = 'mtry')
+p <- ggplot(data = results,
+            aes(x = ntree, y= mse, col = as.factor(mtry)))
+p + geom_line() +
+  geom_point() +
+  scale_color_brewer("mtry", palette = "Dark2")
 ```
 
-RMSE fluctuates inconsistently based on the number of trees - 50 looks like a good compromise between time to run and low error. In terms of mtry, RMSE improvement appears to stop at around 5 so that seems like a good option.
 
 
 ## Problem 2
@@ -229,6 +227,6 @@ mean((test_pred - testing$Sales)^2)
 
 #### 3. Summarize your results. 
 
-Tree error MSE steadily improved throughout the problem, with the original tree & cross-validation of depth around 4.5-5. Bagging and random forest dropped MSE to around 3, then boosting dropped to 1.8. However, a multiple regression with all variables was best at 1.01 and the easiest to explain.
+Tree error MSE steadily improved throughout the problem, with the original tree & cross-validation of depth around 4.5. Bagging and random forest dropped MSE to around 3, then boosting dropped to 1.8. However, a multiple regression with all variables was best at 1.01 and the easiest to explain.
 
 
