@@ -1,7 +1,7 @@
 Homework 4: Bags, Forests, Boosts, oh my
 ================
 Yi Liu
-3/7/2019
+3/8/2019
 
 Problem 1
 ---------
@@ -68,7 +68,7 @@ Problem 8 from Chapter 8 in the text. Set your seed with 9823 and split into tra
 Answer 2
 --------
 
-### (a) Split the data set into a training set and a test set.
+#### (a) Split the data set into a training set and a test set.
 
 ``` r
 df <- tbl_df(Carseats)
@@ -78,7 +78,7 @@ training <- df[inTraining, ]
 testing  <- df[-inTraining, ]
 ```
 
-### (b) Fit a regression tree to the training set. Plot the tree, and interpret the results. What test MSE do you obtain?
+#### (b) Fit a regression tree to the training set. Plot the tree, and interpret the results. What test MSE do you obtain?
 
 ``` r
 tree_carseats <- rpart(Sales ~ . , training)
@@ -94,7 +94,7 @@ mean((test_pred - testing$Sales)^2)
 
     ## [1] 4.484515
 
-### (c) Use cross-validation in order to determine the optimal level of
+#### (c) Use cross-validation in order to determine the optimal level of
 
 tree complexity. Does pruning the tree improve the test MSE?
 
@@ -133,7 +133,7 @@ mean((test_pred - testing$Sales)^2)
 
     ## [1] 4.933184
 
-### (d) Use the bagging approach in order to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables are most important.
+#### (d) Use the bagging approach in order to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables are most important.
 
 ``` r
 set.seed(9823)
@@ -162,7 +162,7 @@ p + geom_col(fill = "#6e0000") +
 
 Shelf location and price are the two most important variables here
 
-### (e) Use random forests to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables ar emost important. Describe the effect of m, the number of variables considered at each split, on the error rate obtained.
+#### (e) Use random forests to analyze this data. What test MSE do you obtain? Use the importance() function to determine which variables ar emost important. Describe the effect of m, the number of variables considered at each split, on the error rate obtained.
 
 ``` r
 set.seed(9823)
@@ -202,7 +202,7 @@ p + geom_col(fill = "#6e0000") +
 
 Again, shelf location and price are most important
 
-### 1. Fit a gradient-boosted tree to the training data and report the estimated test MSE.
+#### 1. Fit a gradient-boosted tree to the training data and report the estimated test MSE.
 
 ``` r
 set.seed(9823)
@@ -230,7 +230,7 @@ mean((test_pred - testing$Sales)^2)
 
     ## [1] 1.816239
 
-### 2. Fit a multiple regression model to the training data and report the estimated test MSE.
+#### 2. Fit a multiple regression model to the training data and report the estimated test MSE.
 
 ``` r
 carseats_lm <- lm(Sales ~ .,data = training)
@@ -240,6 +240,6 @@ mean((test_pred - testing$Sales)^2)
 
     ## [1] 1.012709
 
-### 3. Summarize your results.
+#### 3. Summarize your results.
 
 Tree error MSE steadily improved throughout the problem, with the original tree & cross-validation of depth around 4.5-5. Bagging and random forest dropped MSE to around 3, then boosting dropped to 1.8. However, a multiple regression with all variables was best at 1.01 and the easiest to explain.
