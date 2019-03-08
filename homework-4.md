@@ -11,8 +11,6 @@ Problem 7 from Chapter 8 in the text. To be specific, please use a sequence of `
 Answer 1
 --------
 
-#### Answer 1 w/o cross-validation
-
 ``` r
 #without cross validation
 set.seed(1)
