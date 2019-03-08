@@ -12,48 +12,186 @@ Answer 1
 --------
 
 ``` r
-#without cross validation
-set.seed(1)
+set.seed(1234)
 df <- tbl_df(Boston)
-inTraining <- createDataPartition(df$medv, p = .75, list = F)
-training <- df[inTraining, ]
-testing  <- df[-inTraining, ]
-results <- tibble(trees = rep(seq(25,500,by=25), each=7),
-                  mtry = rep(3:9, each=1,times=20),
-                  MSE = rep(NA, length(trees)))
-for (i in seq(25, 500,by=25)){
-  for (j in seq(3, 9, by=1)){
-    rf_results <- randomForest(medv ~ ., data = training, ntree = i, mtry=j)
-    test_pred <- predict(rf_results, newdata = testing)
-    error <- (mean((test_pred - testing$medv)^2))
-    results[which(results$trees==i & results$mtry==j),'MSE'] = error
+
+for (k in 1:20){
+  inTraining <- createDataPartition(df$medv, p = .75, list = F)
+  training <- df[inTraining, ]
+  testing <- df[-inTraining, ]
+  mtry <- c(3:9)
+  ntree <- seq(25, 500, len = 20)
+  results <- tibble(trial = rep(NA, 140),
+  mtry = rep(NA, 140),
+  ntree = rep(NA, 140),
+  mse = rep(NA, 140)) 
+  for(i in 1:7){
+    cat(sprintf('Trial: %s, mtry: %s --- %s\n', k, mtry[i], Sys.time()))
+    for(j in 1:20){ 
+      rf_train <- randomForest(medv ~ .,
+                               data = training,
+                               mtry = mtry[i],
+                               ntree = ntree[j])
+      mse <- mean((predict(rf_train, newdata = testing) - testing$medv)^2)
+      results[(i-1)*20 + j, ] <- c(k, mtry[i], ntree[j], mse)
+    }
   }
+  if(exists("results_total")){
+  results_total <- bind_rows(results_total, results)
+  }
+  else(
+  results_total <- results
+  )
 }
-p <- ggplot(data = results, aes(x = trees, y = MSE, group=mtry, col=as.factor(mtry)))
-p + geom_line() + labs(color = 'mtry')
 ```
 
-![](homework-4_files/figure-markdown_github/unnamed-chunk-1-1.png)
+    ## Trial: 1, mtry: 3 --- 2019-03-08 12:34:33
+    ## Trial: 1, mtry: 4 --- 2019-03-08 12:34:38
+    ## Trial: 1, mtry: 5 --- 2019-03-08 12:34:44
+    ## Trial: 1, mtry: 6 --- 2019-03-08 12:34:50
+    ## Trial: 1, mtry: 7 --- 2019-03-08 12:34:57
+    ## Trial: 1, mtry: 8 --- 2019-03-08 12:35:06
+    ## Trial: 1, mtry: 9 --- 2019-03-08 12:35:15
+    ## Trial: 2, mtry: 3 --- 2019-03-08 12:35:26
+    ## Trial: 2, mtry: 4 --- 2019-03-08 12:35:30
+    ## Trial: 2, mtry: 5 --- 2019-03-08 12:35:36
+    ## Trial: 2, mtry: 6 --- 2019-03-08 12:35:42
+    ## Trial: 2, mtry: 7 --- 2019-03-08 12:35:50
+    ## Trial: 2, mtry: 8 --- 2019-03-08 12:35:58
+    ## Trial: 2, mtry: 9 --- 2019-03-08 12:36:08
+    ## Trial: 3, mtry: 3 --- 2019-03-08 12:36:18
+    ## Trial: 3, mtry: 4 --- 2019-03-08 12:36:23
+    ## Trial: 3, mtry: 5 --- 2019-03-08 12:36:28
+    ## Trial: 3, mtry: 6 --- 2019-03-08 12:36:35
+    ## Trial: 3, mtry: 7 --- 2019-03-08 12:36:42
+    ## Trial: 3, mtry: 8 --- 2019-03-08 12:36:51
+    ## Trial: 3, mtry: 9 --- 2019-03-08 12:37:00
+    ## Trial: 4, mtry: 3 --- 2019-03-08 12:37:10
+    ## Trial: 4, mtry: 4 --- 2019-03-08 12:37:15
+    ## Trial: 4, mtry: 5 --- 2019-03-08 12:37:21
+    ## Trial: 4, mtry: 6 --- 2019-03-08 12:37:27
+    ## Trial: 4, mtry: 7 --- 2019-03-08 12:37:35
+    ## Trial: 4, mtry: 8 --- 2019-03-08 12:37:44
+    ## Trial: 4, mtry: 9 --- 2019-03-08 12:37:53
+    ## Trial: 5, mtry: 3 --- 2019-03-08 12:38:04
+    ## Trial: 5, mtry: 4 --- 2019-03-08 12:38:08
+    ## Trial: 5, mtry: 5 --- 2019-03-08 12:38:14
+    ## Trial: 5, mtry: 6 --- 2019-03-08 12:38:21
+    ## Trial: 5, mtry: 7 --- 2019-03-08 12:38:28
+    ## Trial: 5, mtry: 8 --- 2019-03-08 12:38:36
+    ## Trial: 5, mtry: 9 --- 2019-03-08 12:38:46
+    ## Trial: 6, mtry: 3 --- 2019-03-08 12:38:56
+    ## Trial: 6, mtry: 4 --- 2019-03-08 12:39:00
+    ## Trial: 6, mtry: 5 --- 2019-03-08 12:39:06
+    ## Trial: 6, mtry: 6 --- 2019-03-08 12:39:13
+    ## Trial: 6, mtry: 7 --- 2019-03-08 12:39:20
+    ## Trial: 6, mtry: 8 --- 2019-03-08 12:39:29
+    ## Trial: 6, mtry: 9 --- 2019-03-08 12:39:38
+    ## Trial: 7, mtry: 3 --- 2019-03-08 12:39:48
+    ## Trial: 7, mtry: 4 --- 2019-03-08 12:39:53
+    ## Trial: 7, mtry: 5 --- 2019-03-08 12:39:59
+    ## Trial: 7, mtry: 6 --- 2019-03-08 12:40:05
+    ## Trial: 7, mtry: 7 --- 2019-03-08 12:40:12
+    ## Trial: 7, mtry: 8 --- 2019-03-08 12:40:20
+    ## Trial: 7, mtry: 9 --- 2019-03-08 12:40:30
+    ## Trial: 8, mtry: 3 --- 2019-03-08 12:40:40
+    ## Trial: 8, mtry: 4 --- 2019-03-08 12:40:44
+    ## Trial: 8, mtry: 5 --- 2019-03-08 12:40:50
+    ## Trial: 8, mtry: 6 --- 2019-03-08 12:40:56
+    ## Trial: 8, mtry: 7 --- 2019-03-08 12:41:03
+    ## Trial: 8, mtry: 8 --- 2019-03-08 12:41:12
+    ## Trial: 8, mtry: 9 --- 2019-03-08 12:41:21
+    ## Trial: 9, mtry: 3 --- 2019-03-08 12:41:31
+    ## Trial: 9, mtry: 4 --- 2019-03-08 12:41:35
+    ## Trial: 9, mtry: 5 --- 2019-03-08 12:41:41
+    ## Trial: 9, mtry: 6 --- 2019-03-08 12:41:47
+    ## Trial: 9, mtry: 7 --- 2019-03-08 12:41:54
+    ## Trial: 9, mtry: 8 --- 2019-03-08 12:42:03
+    ## Trial: 9, mtry: 9 --- 2019-03-08 12:42:12
+    ## Trial: 10, mtry: 3 --- 2019-03-08 12:42:22
+    ## Trial: 10, mtry: 4 --- 2019-03-08 12:42:26
+    ## Trial: 10, mtry: 5 --- 2019-03-08 12:42:32
+    ## Trial: 10, mtry: 6 --- 2019-03-08 12:42:38
+    ## Trial: 10, mtry: 7 --- 2019-03-08 12:42:46
+    ## Trial: 10, mtry: 8 --- 2019-03-08 12:42:54
+    ## Trial: 10, mtry: 9 --- 2019-03-08 12:43:04
+    ## Trial: 11, mtry: 3 --- 2019-03-08 12:43:14
+    ## Trial: 11, mtry: 4 --- 2019-03-08 12:43:19
+    ## Trial: 11, mtry: 5 --- 2019-03-08 12:43:24
+    ## Trial: 11, mtry: 6 --- 2019-03-08 12:43:31
+    ## Trial: 11, mtry: 7 --- 2019-03-08 12:43:38
+    ## Trial: 11, mtry: 8 --- 2019-03-08 12:43:47
+    ## Trial: 11, mtry: 9 --- 2019-03-08 12:43:56
+    ## Trial: 12, mtry: 3 --- 2019-03-08 12:44:06
+    ## Trial: 12, mtry: 4 --- 2019-03-08 12:44:11
+    ## Trial: 12, mtry: 5 --- 2019-03-08 12:44:17
+    ## Trial: 12, mtry: 6 --- 2019-03-08 12:44:23
+    ## Trial: 12, mtry: 7 --- 2019-03-08 12:44:31
+    ## Trial: 12, mtry: 8 --- 2019-03-08 12:44:39
+    ## Trial: 12, mtry: 9 --- 2019-03-08 12:44:48
+    ## Trial: 13, mtry: 3 --- 2019-03-08 12:44:58
+    ## Trial: 13, mtry: 4 --- 2019-03-08 12:45:03
+    ## Trial: 13, mtry: 5 --- 2019-03-08 12:45:08
+    ## Trial: 13, mtry: 6 --- 2019-03-08 12:45:15
+    ## Trial: 13, mtry: 7 --- 2019-03-08 12:45:22
+    ## Trial: 13, mtry: 8 --- 2019-03-08 12:45:31
+    ## Trial: 13, mtry: 9 --- 2019-03-08 12:45:40
+    ## Trial: 14, mtry: 3 --- 2019-03-08 12:45:50
+    ## Trial: 14, mtry: 4 --- 2019-03-08 12:45:55
+    ## Trial: 14, mtry: 5 --- 2019-03-08 12:46:00
+    ## Trial: 14, mtry: 6 --- 2019-03-08 12:46:06
+    ## Trial: 14, mtry: 7 --- 2019-03-08 12:46:14
+    ## Trial: 14, mtry: 8 --- 2019-03-08 12:46:22
+    ## Trial: 14, mtry: 9 --- 2019-03-08 12:46:31
+    ## Trial: 15, mtry: 3 --- 2019-03-08 12:46:41
+    ## Trial: 15, mtry: 4 --- 2019-03-08 12:46:46
+    ## Trial: 15, mtry: 5 --- 2019-03-08 12:46:51
+    ## Trial: 15, mtry: 6 --- 2019-03-08 12:46:58
+    ## Trial: 15, mtry: 7 --- 2019-03-08 12:47:05
+    ## Trial: 15, mtry: 8 --- 2019-03-08 12:47:13
+    ## Trial: 15, mtry: 9 --- 2019-03-08 12:47:23
+    ## Trial: 16, mtry: 3 --- 2019-03-08 12:47:33
+    ## Trial: 16, mtry: 4 --- 2019-03-08 12:47:38
+    ## Trial: 16, mtry: 5 --- 2019-03-08 12:47:43
+    ## Trial: 16, mtry: 6 --- 2019-03-08 12:47:49
+    ## Trial: 16, mtry: 7 --- 2019-03-08 12:47:57
+    ## Trial: 16, mtry: 8 --- 2019-03-08 12:48:05
+    ## Trial: 16, mtry: 9 --- 2019-03-08 12:48:14
+    ## Trial: 17, mtry: 3 --- 2019-03-08 12:48:25
+    ## Trial: 17, mtry: 4 --- 2019-03-08 12:48:29
+    ## Trial: 17, mtry: 5 --- 2019-03-08 12:48:35
+    ## Trial: 17, mtry: 6 --- 2019-03-08 12:48:41
+    ## Trial: 17, mtry: 7 --- 2019-03-08 12:48:48
+    ## Trial: 17, mtry: 8 --- 2019-03-08 12:48:57
+    ## Trial: 17, mtry: 9 --- 2019-03-08 12:49:06
+    ## Trial: 18, mtry: 3 --- 2019-03-08 12:49:16
+    ## Trial: 18, mtry: 4 --- 2019-03-08 12:49:20
+    ## Trial: 18, mtry: 5 --- 2019-03-08 12:49:26
+    ## Trial: 18, mtry: 6 --- 2019-03-08 12:49:32
+    ## Trial: 18, mtry: 7 --- 2019-03-08 12:49:40
+    ## Trial: 18, mtry: 8 --- 2019-03-08 12:49:48
+    ## Trial: 18, mtry: 9 --- 2019-03-08 12:49:58
+    ## Trial: 19, mtry: 3 --- 2019-03-08 12:50:08
+    ## Trial: 19, mtry: 4 --- 2019-03-08 12:50:13
+    ## Trial: 19, mtry: 5 --- 2019-03-08 12:50:18
+    ## Trial: 19, mtry: 6 --- 2019-03-08 12:50:25
+    ## Trial: 19, mtry: 7 --- 2019-03-08 12:50:32
+    ## Trial: 19, mtry: 8 --- 2019-03-08 12:50:40
+    ## Trial: 19, mtry: 9 --- 2019-03-08 12:50:49
+    ## Trial: 20, mtry: 3 --- 2019-03-08 12:50:59
+    ## Trial: 20, mtry: 4 --- 2019-03-08 12:51:04
+    ## Trial: 20, mtry: 5 --- 2019-03-08 12:51:09
+    ## Trial: 20, mtry: 6 --- 2019-03-08 12:51:16
+    ## Trial: 20, mtry: 7 --- 2019-03-08 12:51:23
+    ## Trial: 20, mtry: 8 --- 2019-03-08 12:51:32
+    ## Trial: 20, mtry: 9 --- 2019-03-08 12:51:41
 
 ``` r
-set.seed(1)
-results <- tibble(trees = rep(seq(25,500,by=25), each=7),
-                  mtry = rep(3:9, each=1,times=20),
-                  MSE = rep(NA, length(trees)))
-set.seed(1)
-for (i in seq(25, 500, by=25)){
-  rf_results <- train(medv ~ ., 
-                      data = training,
-                      method = "rf",
-                      ntree = i,
-                      importance = T,
-                      tuneGrid = data.frame(mtry = seq(3,9,by=1)))
-  for (k in seq(1,7)){
-    results[which(results$trees==i & results$mtry==k+2),'MSE'] = (rf_results$results$RMSE[k])^2
-    }
-}
-p <- ggplot(data = results, aes(x = trees, y = MSE, group=mtry, col=as.factor(mtry)))
-p + geom_line() + labs(color = 'mtry')
+p <- ggplot(data = results,
+            aes(x = ntree, y= mse, col = as.factor(mtry)))
+p + geom_line() +
+  geom_point() +
+  scale_color_brewer("mtry", palette = "Dark2")
 ```
 
 ![](homework-4_files/figure-markdown_github/unnamed-chunk-2-1.png)
