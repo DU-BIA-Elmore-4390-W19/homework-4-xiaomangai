@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(doMC)
 set.seed(10982)
 registerDoMC(cores = 4)
+```
+```{r}
 library(tidyverse)
 library(broom)
 library(glmnet)
@@ -28,6 +30,7 @@ library(MASS)
 library(gbm)
 theme_set(theme_bw())
 ```
+
 ## Problem 1
 
 Problem 7 from Chapter 8 in the text. To be specific, please use a sequence of
